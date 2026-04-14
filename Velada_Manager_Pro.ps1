@@ -15,19 +15,58 @@ Function Wait-For-Port($port) {
     return $false
 }
 
+Function Ensure-Dependency($name, $cmd, $id) {
+    if (-not (Check-Command $cmd)) {
+        Write-Host "[!] $name no encontrado. Intentando instalar con winget..." -ForegroundColor Yellow
+        winget install --id $id --silent --accept-package-agreements --accept-source-agreements
+        if (-not (Check-Command $cmd)) {
+            Write-Host "[X] No se pudo instalar $name automáticamente. Por favor, instálalo manualmente." -ForegroundColor Red
+            Pause; Exit
+        }
+        Write-Host "[OK] $name instalado correctamente." -ForegroundColor Green
+    } else {
+        Write-Host "[OK] $name detectado." -ForegroundColor Green
+    }
+}
+
 Clear-Host
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host "       VELADA MANAGER - INICIO CONFIRMADO    " -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
-# 1. Sincronizar (Si hay internet)
-try { git pull origin main } catch { Write-Host "[!] No se pudo conectar a GitHub, usando version local." -ForegroundColor Yellow }
+# 0. Verificar Dependencias de Sistema
+Write-Host "[i] Verificando requisitos del sistema..." -ForegroundColor Gray
+Ensure-Dependency "Git" "git" "Git.Git"
+Ensure-Dependency "Node.js" "node" "OpenJS.NodeJS.LTS"
 
-# 2. Asegurar procesos limpios
+# 1. Sincronizar (Si hay internet)
+try { 
+    Write-Host "[i] Sincronizando con repositorio..." -ForegroundColor Gray
+    git pull origin main 
+} catch { 
+    Write-Host "[!] No se pudo conectar a GitHub, usando version local." -ForegroundColor Yellow 
+}
+
+# 2. Verificar node_modules
+if (-not (Test-Path "$ProjectDir\server\node_modules")) {
+    Write-Host "[!] node_modules no encontrados en server. Instalando..." -ForegroundColor Yellow
+    Set-Location "$ProjectDir\server"
+    npm install
+    Set-Location $ProjectDir
+}
+
+if (-not (Test-Path "$ProjectDir\client\node_modules")) {
+    Write-Host "[!] node_modules no encontrados en client. Instalando..." -ForegroundColor Yellow
+    Set-Location "$ProjectDir\client"
+    npm install
+    Set-Location $ProjectDir
+}
+
+# 3. Asegurar procesos limpios
 Write-Host "[i] Limpiando procesos anteriores..." -ForegroundColor Gray
 Stop-Process -Name "node" -ErrorAction SilentlyContinue
 
-# 3. Lanzar Servidor (npm start)
+# 4. Lanzar Servidor (npm start)
 Write-Host "[1/2] Iniciando Servidor (Backend)..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoProfile -Command 'cd $ProjectDir\server; npm start'" -WindowStyle Minimized
 
@@ -36,7 +75,7 @@ if (-not (Wait-For-Port 3001)) {
     Pause; Exit
 }
 
-# 4. Lanzar Cliente (npm run dev)
+# 5. Lanzar Cliente (npm run dev)
 Write-Host "[2/2] Iniciando Cliente (Vite)..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoProfile -Command 'cd $ProjectDir\client; npm run dev'" -WindowStyle Minimized
 
@@ -45,7 +84,7 @@ if (-not (Wait-For-Port 5173)) {
     Pause; Exit
 }
 
-# 5. Finalizar
+# 6. Finalizar
 Write-Host "`n[OK] ¡Todo funcionando correctamente!" -ForegroundColor Green
 Start-Process "http://localhost:5173"
 
