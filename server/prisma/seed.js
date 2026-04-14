@@ -6,11 +6,11 @@ async function main() {
 
   // Create Admin User
   await prisma.user.upsert({
-    where: { username: 'admin' },
+    where: { username: 'Admin' },
     update: {},
     create: {
-      username: 'admin',
-      password: 'password123', // En producción usar bcrypt
+      username: 'Admin',
+      password: 'PC2220AMGC', // En producción usar bcrypt
       role: 'ADMIN',
     },
   });
