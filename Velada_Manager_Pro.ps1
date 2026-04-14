@@ -86,6 +86,15 @@ if (-not (Test-Path "$ProjectDir\server\prisma\dev.db")) {
     Write-Host "[!] Base de datos no encontrada. Inicializando esquema..." -ForegroundColor Yellow
     Set-Location "$ProjectDir\server"
     npx prisma db push
+    Write-Host "[i] Aplicando datos iniciales (Seed)..." -ForegroundColor Gray
+    node prisma/seed.js
+    Set-Location $ProjectDir
+} else {
+    # Verificar si la base de datos está vacía (opcional pero recomendado)
+    Write-Host "[i] Verificando integridad de la base de datos..." -ForegroundColor Gray
+    Set-Location "$ProjectDir\server"
+    # Intentar correr seed de nuevo por si acaso (el script de seed ya borra duplicados según vimos)
+    node prisma/seed.js
     Set-Location $ProjectDir
 }
 
@@ -98,11 +107,12 @@ if (-not (Test-Path "$ProjectDir\client\node_modules")) {
 
 # 4. Asegurar procesos limpios
 Write-Host "[i] Limpiando procesos anteriores..." -ForegroundColor Gray
-Stop-Process -Name "node" -ErrorAction SilentlyContinue
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # 5. Lanzar Servidor (npm start)
 Write-Host "[1/2] Iniciando Servidor (Backend)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoProfile -Command 'cd $ProjectDir\server; npm start'" -WindowStyle Minimized
+# Usamos cmd /c para mayor compatibilidad con rutas y npm
+Start-Process cmd -ArgumentList "/c cd /d $ProjectDir\server && npm start" -WindowStyle Minimized
 
 if (-not (Wait-For-Port 3001)) {
     Write-Host "[X] El servidor no inicio. Prueba ejecutar 'npm start' en la carpeta 'server'." -ForegroundColor Red
@@ -111,7 +121,7 @@ if (-not (Wait-For-Port 3001)) {
 
 # 6. Lanzar Cliente (npm run dev)
 Write-Host "[2/2] Iniciando Cliente (Vite)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoProfile -Command 'cd $ProjectDir\client; npm run dev'" -WindowStyle Minimized
+Start-Process cmd -ArgumentList "/c cd /d $ProjectDir\client && npm run dev" -WindowStyle Minimized
 
 if (-not (Wait-For-Port 5173)) {
     Write-Host "[X] El cliente no inicio. Prueba ejecutar 'npm run dev' en la carpeta 'client'." -ForegroundColor Red
@@ -120,6 +130,7 @@ if (-not (Wait-For-Port 5173)) {
 
 # 7. Finalizar
 Write-Host "`n[OK] ¡Todo funcionando correctamente!" -ForegroundColor Green
+Write-Host "[i] Credenciales de Administrador: Admin / PC2220AMGC" -ForegroundColor Cyan
 Start-Process "http://localhost:5173"
 
 Write-Host "`n=============================================" -ForegroundColor Cyan
