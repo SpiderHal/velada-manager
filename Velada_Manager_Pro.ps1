@@ -73,11 +73,19 @@ try {
     Write-Host "[!] No se pudo conectar a GitHub, usando version local." -ForegroundColor Yellow 
 }
 
-# 3. Verificar node_modules
+# 3. Verificar node_modules y Base de Datos
 if (-not (Test-Path "$ProjectDir\server\node_modules")) {
     Write-Host "[!] node_modules no encontrados en server. Instalando..." -ForegroundColor Yellow
     Set-Location "$ProjectDir\server"
     npm install
+    Set-Location $ProjectDir
+}
+
+# Verificación de Base de Datos (Prisma)
+if (-not (Test-Path "$ProjectDir\server\prisma\dev.db")) {
+    Write-Host "[!] Base de datos no encontrada. Inicializando esquema..." -ForegroundColor Yellow
+    Set-Location "$ProjectDir\server"
+    npx prisma db push
     Set-Location $ProjectDir
 }
 
