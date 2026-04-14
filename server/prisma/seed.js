@@ -21,25 +21,15 @@ async function main() {
   });
   console.log('Created admin user: Admin / PC2220AMGC');
 
-  // Create Standard User
+  // Create Standard User (Adri)
   await prisma.user.create({
     data: {
       username: 'Adri',
-      password: 'Adri/AMgm.2023',
+      password: 'Adri/AMgc.2023',
       role: 'USER',
     },
   });
-  console.log('Created standard user: Adri / Adri/AMgm.2023');
-
-  // Create Vendor User
-  await prisma.user.create({
-    data: {
-      username: 'Vendedor',
-      password: 'Adri/AMgm.2023',
-      role: 'VENDEDOR',
-    },
-  });
-  console.log('Created vendor user: Vendedor / Adri/AMgm.2023');
+  console.log('Created standard user: Adri / Adri/AMgc.2023');
 
   for (let i = 1; i <= 40; i++) {
     const table = await prisma.table.upsert({
