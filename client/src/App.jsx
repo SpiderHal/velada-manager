@@ -266,10 +266,10 @@ function App() {
           
           {activeTab === 'map' && (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-              <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-auto p-6 relative">
-                 <div className="min-w-[1200px]">
-                    <div className="bg-indigo-900 dark:bg-indigo-700 text-white text-center py-4 rounded-b-2xl font-black tracking-widest mb-12 shadow-lg">ESCENARIO</div>
-                    <div className="grid grid-cols-10 gap-8">
+              <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-auto p-12 relative">
+                 <div className="min-w-[1800px]">
+                    <div className="bg-indigo-900 dark:bg-indigo-700 text-white text-center py-4 rounded-b-2xl font-black tracking-widest mb-16 shadow-lg">ESCENARIO</div>
+                    <div className="grid grid-cols-10 gap-x-6 gap-y-20">
                       {tables.map(table => (
                         <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
                       ))}
