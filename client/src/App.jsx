@@ -123,15 +123,23 @@ function App() {
   const handleExport = async () => {
     try {
       const response = await fetch(`${API_URL}/backup/export`);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Fallo en la respuesta del servidor');
+      }
       const data = await response.json();
+      
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `backup_velada_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a); // Necesario para algunos navegadores
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Error al exportar');
+      alert(`Error al exportar: ${err.message}`);
     }
   };
 
