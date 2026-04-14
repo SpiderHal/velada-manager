@@ -2,15 +2,15 @@ import React from 'react';
 import Seat from './Seat';
 
 const Table = ({ table, selectedSeats, onToggleSeat }) => {
-  const radius = 38; // Radio para posicionar los asientos
+  const radius = 38; 
   const totalSeats = table.seats.length;
 
   return (
-    <div className="bg-white p-2 rounded-xl shadow-md border border-gray-100 flex flex-col items-center justify-center min-h-[160px]">
+    <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col items-center justify-center min-h-[160px] transition-all">
       <div className="relative w-32 h-32 flex items-center justify-center">
         {/* Mesa Central */}
-        <div className="w-16 h-16 bg-gray-100 rounded-full border-2 border-gray-200 shadow-inner flex items-center justify-center z-10">
-          <span className="text-[10px] font-black text-gray-500 text-center">Mesa<br/>{table.number}</span>
+        <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-inner flex items-center justify-center z-10">
+          <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 text-center leading-tight">Mesa<br/>{table.number}</span>
         </div>
 
         {/* Asientos alrededor */}
@@ -22,7 +22,7 @@ const Table = ({ table, selectedSeats, onToggleSeat }) => {
           return (
             <div
               key={seat.id}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
+              className="absolute transform -translate-x-1/2 -translate-y-1/2"
               style={{
                 left: `${x}%`,
                 top: `${y}%`,

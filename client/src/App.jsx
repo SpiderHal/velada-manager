@@ -3,20 +3,21 @@ import Table from './components/Table';
 import TicketGenerator from './components/TicketGenerator';
 import { 
   LogOut, UserPlus, Trash2, Download, Search, CheckCircle, 
-  Database, Users, Map as MapIcon, ClipboardList, Upload 
+  Database, Users, Map as MapIcon, ClipboardList, Upload, Sun, Moon 
 } from 'lucide-react';
 
 const API_URL = 'http://localhost:3001/api';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('map'); // map, reservations, users, backup
+  const [activeTab, setActiveTab] = useState('map'); 
   const [tables, setTables] = useState([]);
   const [selectedSeatIds, setSelectedSeatIds] = useState([]);
   const [buyerName, setBuyerName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingTicket, setPendingTicket] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', role: 'USER' });
 
@@ -35,6 +36,16 @@ function App() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -67,7 +78,6 @@ function App() {
   const handleReserve = async (e) => {
     e.preventDefault();
     if (selectedSeatIds.length === 0 || !buyerName) return;
-
     try {
       const response = await fetch(`${API_URL}/reserve`, {
         method: 'POST',
@@ -75,7 +85,6 @@ function App() {
         body: JSON.stringify({ seatIds: selectedSeatIds, buyerName }),
       });
       if (!response.ok) throw new Error('Error al reservar');
-
       const reservedSeatsInfo = [];
       tables.forEach(t => {
         t.seats.forEach(s => {
@@ -84,12 +93,10 @@ function App() {
           }
         });
       });
-
       setPendingTicket({ buyerName, seats: reservedSeatsInfo });
       setBuyerName('');
       setSelectedSeatIds([]);
       fetchTables();
-      
       setTimeout(() => {
         document.getElementById('download-ticket-btn')?.click();
         setPendingTicket(null);
@@ -161,21 +168,26 @@ function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-          <h1 className="text-2xl font-black text-indigo-900 mb-6 text-center">Velada Manager</h1>
+      <div className="min-h-screen bg-indigo-900 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-300">
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-transparent dark:border-slate-800">
+          <div className="flex justify-between items-center mb-6">
+             <h1 className="text-2xl font-black text-indigo-900 dark:text-indigo-400">Velada Manager</h1>
+             <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full text-gray-600 dark:text-gray-300">
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+             </button>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input 
               type="text" placeholder="Usuario" 
-              className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
               value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})}
             />
             <input 
               type="password" placeholder="Contraseña" 
-              className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
               value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})}
             />
-            <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all">
+            <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-none">
               Ingresar
             </button>
           </form>
@@ -184,12 +196,12 @@ function App() {
     );
   }
 
-  // Agrupar asientos ocupados por comprador
   const reservations = tables.flatMap(t => t.seats)
     .filter(s => s.status === 'OCCUPIED')
     .reduce((acc, curr) => {
       const existing = acc.find(item => item.buyerName === curr.buyerName);
-      const seatInfo = { tableNumber: tables.find(t => t.id === curr.tableId).number, seatNumber: curr.seatNumber, id: curr.id };
+      const tableFound = tables.find(t => t.id === curr.tableId);
+      const seatInfo = { tableNumber: tableFound ? tableFound.number : '?', seatNumber: curr.seatNumber, id: curr.id };
       if (existing) {
         existing.seats.push(seatInfo);
         existing.ids.push(curr.id);
@@ -201,49 +213,41 @@ function App() {
     .filter(r => r.buyerName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col transition-colors duration-300">
       {pendingTicket && <TicketGenerator reservation={pendingTicket} />}
       
-      {/* Sidebar / Nav */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-black text-indigo-950">Velada Manager</h1>
-          <nav className="flex bg-gray-100 p-1 rounded-xl">
-            <button 
-              onClick={() => setActiveTab('map')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'map' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <MapIcon size={16} /> Mapa
-            </button>
-            <button 
-              onClick={() => setActiveTab('reservations')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'reservations' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <ClipboardList size={16} /> Reservas
-            </button>
-            <button 
-              onClick={() => setActiveTab('backup')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'backup' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Database size={16} /> Respaldos
-            </button>
-            {user.role === 'ADMIN' && (
-              <button 
-                onClick={() => setActiveTab('users')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <Users size={16} /> Usuarios
-              </button>
-            )}
+          <h1 className="text-2xl font-black text-indigo-950 dark:text-white">Velada Manager</h1>
+          <nav className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+            {[
+              { id: 'map', icon: MapIcon, label: 'Mapa' },
+              { id: 'reservations', icon: ClipboardList, label: 'Reservas' },
+              { id: 'backup', icon: Database, label: 'Respaldos' },
+              { id: 'users', icon: Users, label: 'Usuarios', adminOnly: true }
+            ].map(item => (
+              (!item.adminOnly || user.role === 'ADMIN') && (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === item.id ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                >
+                  <item.icon size={16} /> <span className="hidden sm:inline">{item.label}</span>
+                </button>
+              )
+            ))}
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
+          <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 dark:bg-slate-800 rounded-xl text-gray-600 dark:text-gray-300 transition-all">
+             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black text-indigo-600 uppercase">{user.role}</p>
-            <p className="text-sm font-bold text-gray-700">{user.username}</p>
+            <p className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase">{user.role}</p>
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{user.username}</p>
           </div>
-          <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
+          <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all">
             <LogOut size={20} />
           </button>
         </div>
@@ -252,12 +256,11 @@ function App() {
       <main className="flex-1 p-6 overflow-hidden">
         <div className="max-w-7xl mx-auto h-full flex flex-col">
           
-          {/* VISTA: MAPA */}
           {activeTab === 'map' && (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-              <div className="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-auto p-6 relative">
+              <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-auto p-6 relative">
                  <div className="min-w-[1200px]">
-                    <div className="bg-indigo-900 text-white text-center py-4 rounded-b-2xl font-black tracking-widest mb-12">ESCENARIO</div>
+                    <div className="bg-indigo-900 dark:bg-indigo-700 text-white text-center py-4 rounded-b-2xl font-black tracking-widest mb-12 shadow-lg">ESCENARIO</div>
                     <div className="grid grid-cols-8 gap-8">
                       {tables.map(table => (
                         <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -266,42 +269,41 @@ function App() {
                  </div>
               </div>
               <div className="lg:col-span-1 space-y-4">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                  <h3 className="font-black text-gray-800 mb-4 uppercase text-xs tracking-widest">Nueva Reserva</h3>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
+                  <h3 className="font-black text-gray-800 dark:text-gray-200 mb-4 uppercase text-xs tracking-widest">Nueva Reserva</h3>
                   {selectedSeatIds.length > 0 ? (
                     <form onSubmit={handleReserve} className="space-y-4">
-                      <div className="bg-indigo-50 p-4 rounded-2xl">
-                        <p className="text-xs font-bold text-indigo-400">Lugares seleccionados</p>
-                        <p className="text-2xl font-black text-indigo-700">{selectedSeatIds.length}</p>
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border dark:border-indigo-500/30">
+                        <p className="text-xs font-bold text-indigo-400 dark:text-indigo-300">Lugares seleccionados</p>
+                        <p className="text-2xl font-black text-indigo-700 dark:text-indigo-400">{selectedSeatIds.length}</p>
                       </div>
                       <input 
                         type="text" placeholder="Nombre del Comprador"
-                        className="w-full p-4 bg-gray-50 border rounded-2xl outline-none"
+                        className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white placeholder:dark:text-gray-500"
                         value={buyerName} onChange={e => setBuyerName(e.target.value)}
                         required
                       />
-                      <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2">
+                      <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all">
                         <CheckCircle size={18} /> Confirmar
                       </button>
                     </form>
                   ) : (
-                    <p className="text-gray-400 text-sm italic">Selecciona asientos en el mapa...</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm italic">Selecciona asientos en el mapa...</p>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* VISTA: RESERVAS */}
           {activeTab === 'reservations' && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h2 className="text-xl font-black text-gray-800">Listado de Reservas</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                <h2 className="text-xl font-black text-gray-800 dark:text-white">Listado de Reservas</h2>
                 <div className="relative w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input 
                     type="text" placeholder="Buscar por nombre..."
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border rounded-xl text-sm outline-none"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl text-sm outline-none dark:text-white"
                     value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
@@ -309,36 +311,36 @@ function App() {
               <div className="flex-1 overflow-auto p-6">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <tr className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
                       <th className="pb-4">Comprador</th>
                       <th className="pb-4">Lugares</th>
                       <th className="pb-4">Detalle</th>
                       <th className="pb-4 text-right">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                     {reservations.map((res, i) => (
-                      <tr key={i} className="group hover:bg-gray-50/50 transition-all">
-                        <td className="py-4 font-bold text-gray-800">{res.buyerName}</td>
+                      <tr key={i} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-all">
+                        <td className="py-4 font-bold text-gray-800 dark:text-gray-200">{res.buyerName}</td>
                         <td className="py-4">
-                          <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md text-xs font-black">
+                          <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-2 py-1 rounded-md text-xs font-black">
                             {res.seats.length} Lugares
                           </span>
                         </td>
-                        <td className="py-4 text-xs text-gray-500">
+                        <td className="py-4 text-xs text-gray-500 dark:text-gray-400">
                           {res.seats.map(s => `M${s.tableNumber}-A${s.seatNumber}`).join(', ')}
                         </td>
                         <td className="py-4 text-right space-x-2">
                           <button 
                             onClick={() => reprintTicket(res)}
-                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
                             title="Re-descargar Ticket"
                           >
                             <Download size={18} />
                           </button>
                           <button 
                             onClick={() => handleCancel(res.ids)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                             title="Cancelar Reserva"
                           >
                             <Trash2 size={18} />
@@ -352,57 +354,53 @@ function App() {
             </div>
           )}
 
-          {/* VISTA: RESPALDOS */}
           {activeTab === 'backup' && (
-            <div className="max-w-2xl mx-auto w-full bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center space-y-8">
-              <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+            <div className="max-w-2xl mx-auto w-full bg-white dark:bg-slate-900 p-12 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 text-center space-y-8">
+              <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto">
                 <Database size={40} />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-gray-800 mb-2">Seguridad de Datos</h2>
-                <p className="text-gray-500">Exporta toda la información del sistema para guardarla en un lugar seguro o impórtala en caso de emergencia.</p>
+                <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">Seguridad de Datos</h2>
+                <p className="text-gray-500 dark:text-gray-400">Exporta toda la información del sistema para guardarla en un lugar seguro o impórtala en caso de emergencia.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={handleExport}
-                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-indigo-200 rounded-3xl hover:bg-indigo-50 transition-all group"
+                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-indigo-200 dark:border-indigo-800 rounded-3xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all group"
                 >
                   <Download className="mb-2 text-indigo-400 group-hover:text-indigo-600" size={32} />
-                  <span className="font-bold text-indigo-600">Exportar JSON</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">Exportar JSON</span>
                 </button>
-                <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-3xl hover:bg-gray-50 cursor-pointer transition-all group">
+                <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-3xl hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-all group">
                   <Upload className="mb-2 text-gray-400 group-hover:text-gray-600" size={32} />
-                  <span className="font-bold text-gray-600">Importar JSON</span>
+                  <span className="font-bold text-gray-600 dark:text-gray-400">Importar JSON</span>
                   <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                 </label>
               </div>
             </div>
           )}
 
-          {/* VISTA: USUARIOS (Solo Admin) */}
           {activeTab === 'users' && user.role === 'ADMIN' && (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
-               <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                  <h2 className="text-xl font-black text-gray-800">Gestión de Colaboradores</h2>
-                  <button onClick={() => setShowUserModal(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full">
+               <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                  <h2 className="text-xl font-black text-gray-800 dark:text-white">Gestión de Colaboradores</h2>
+                  <button onClick={() => setShowUserModal(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">
                     <UserPlus size={18} /> Nuevo Usuario
                   </button>
                </div>
-               {/* Aquí podrías mapear una lista de usuarios del API /users */}
-               <div className="p-12 text-center text-gray-400 italic">
-                 Lista de usuarios cargada desde el servidor... (Funcionalidad de Admin completa)
+               <div className="p-12 text-center text-gray-400 dark:text-gray-500 italic">
+                 Panel de administración de usuarios activo.
                </div>
             </div>
           )}
-
         </div>
       </main>
 
       {/* MODAL USUARIO */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-8 rounded-3xl w-full max-w-md">
-            <h3 className="text-xl font-black mb-6">Nuevo Usuario</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-md border border-transparent dark:border-slate-800">
+            <h3 className="text-xl font-black mb-6 dark:text-white">Nuevo Usuario</h3>
             <form onSubmit={async (e) => {
                e.preventDefault();
                const res = await fetch(`${API_URL}/users`, {
@@ -412,14 +410,14 @@ function App() {
                });
                if(res.ok) { alert('Usuario creado'); setShowUserModal(false); }
             }} className="space-y-4">
-              <input type="text" placeholder="Usuario" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, username: e.target.value})} required />
-              <input type="password" placeholder="Contraseña" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} required />
-              <select className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}>
+              <input type="text" placeholder="Usuario" className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, username: e.target.value})} required />
+              <input type="password" placeholder="Contraseña" className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} required />
+              <select className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}>
                 <option value="USER">Vendedor (USER)</option>
                 <option value="ADMIN">Administrador (ADMIN)</option>
               </select>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 py-4 font-bold text-gray-500">Cancelar</button>
+                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 py-4 font-bold text-gray-500 dark:text-gray-400">Cancelar</button>
                 <button className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl">Crear</button>
               </div>
             </form>
