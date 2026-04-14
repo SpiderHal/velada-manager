@@ -130,7 +130,6 @@ if (-not (Wait-For-Port 5173)) {
 
 # 7. Finalizar
 Write-Host "`n[OK] ¡Todo funcionando correctamente!" -ForegroundColor Green
-Write-Host "[i] Credenciales de Administrador: Admin / PC2220AMGC" -ForegroundColor Cyan
 Start-Process "http://localhost:5173"
 
 Write-Host "`n=============================================" -ForegroundColor Cyan
