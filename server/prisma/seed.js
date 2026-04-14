@@ -4,17 +4,22 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
 
+  // Limpiar administradores anteriores (opcional, para evitar duplicidad)
+  await prisma.user.deleteMany({
+    where: { 
+      username: { in: ['admin', 'Admin'] }
+    }
+  });
+
   // Create Admin User
-  await prisma.user.upsert({
-    where: { username: 'Admin' },
-    update: {},
-    create: {
+  await prisma.user.create({
+    data: {
       username: 'Admin',
-      password: 'PC2220AMGC', // En producción usar bcrypt
+      password: 'PC2220AMGC',
       role: 'ADMIN',
     },
   });
-  console.log('Created admin user');
+  console.log('Created admin user: Admin / PC2220AMGC');
 
   for (let i = 1; i <= 40; i++) {
     const table = await prisma.table.upsert({
