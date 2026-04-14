@@ -25,11 +25,11 @@ async function main() {
   await prisma.user.create({
     data: {
       username: 'Adri',
-      password: 'Adri/AMgc.2023',
+      password: 'AMgc.2023',
       role: 'USER',
     },
   });
-  console.log('Created standard user: Adri / Adri/AMgc.2023');
+  console.log('Created standard user: Adri / AMgc.2023');
 
   for (let i = 1; i <= 40; i++) {
     const table = await prisma.table.upsert({
