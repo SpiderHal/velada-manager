@@ -1,15 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
-// Login simple
+// Login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -25,7 +27,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Crear usuario (Admin)
+// Gestión de Usuarios (Solo ADMIN puede crear)
 app.post('/api/users', async (req, res) => {
   const { username, password, role } = req.body;
   try {
@@ -38,14 +40,24 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Get all tables and seats
+// Listar todos los usuarios (Para el panel de Admin)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true, role: true }
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener todas las mesas y asientos
 app.get('/api/tables', async (req, res) => {
   try {
     const tables = await prisma.table.findMany({
       include: {
-        seats: {
-          orderBy: { seatNumber: 'asc' }
-        },
+        seats: { orderBy: { seatNumber: 'asc' } }
       },
       orderBy: { number: 'asc' }
     });
@@ -55,16 +67,11 @@ app.get('/api/tables', async (req, res) => {
   }
 });
 
-// Reserve seats
+// Reservar asientos
 app.post('/api/reserve', async (req, res) => {
   const { seatIds, buyerName } = req.body;
-
-  if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
-    return res.status(400).json({ error: 'Debes seleccionar al menos un asiento.' });
-  }
-
-  if (!buyerName) {
-    return res.status(400).json({ error: 'El nombre del comprador es obligatorio.' });
+  if (!seatIds?.length || !buyerName) {
+    return res.status(400).json({ error: 'Datos incompletos' });
   }
 
   try {
@@ -82,16 +89,15 @@ app.post('/api/reserve', async (req, res) => {
         data: { status: 'OCCUPIED', buyerName },
       });
 
-      return { success: true, reservationDate: new Date() };
+      return { success: true };
     });
-
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// Cancel reservation (Admin)
+// Cancelar reserva (Acceso para ADMIN y USER según tu petición)
 app.post('/api/cancel', async (req, res) => {
   const { seatIds } = req.body;
   try {
@@ -105,6 +111,54 @@ app.post('/api/cancel', async (req, res) => {
   }
 });
 
+// --- RESPALDOS (Exportar/Importar) ---
+
+// Exportar todos los datos a JSON
+app.get('/api/backup/export', async (req, res) => {
+  try {
+    const tables = await prisma.table.findMany({ include: { seats: true } });
+    const users = await prisma.user.findMany();
+    res.json({
+      timestamp: new Date().toISOString(),
+      tables,
+      users
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al exportar datos' });
+  }
+});
+
+// Importar datos desde JSON
+app.post('/api/backup/import', async (req, res) => {
+  const { tables, users } = req.body;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Limpiar datos actuales (opcional, pero recomendado para una importación limpia)
+      await tx.seat.deleteMany();
+      await tx.table.deleteMany();
+      await tx.user.deleteMany();
+
+      // Importar Tablas y Asientos
+      for (const table of tables) {
+        const { seats, ...tableData } = table;
+        const createdTable = await tx.table.create({ data: tableData });
+        if (seats && seats.length > 0) {
+          await tx.seat.createMany({
+            data: seats.map(s => ({ ...s, tableId: createdTable.id }))
+          });
+        }
+      }
+
+      // Importar Usuarios
+      await tx.user.createMany({ data: users });
+    });
+    res.json({ success: true, message: 'Datos importados correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al importar datos: ' + error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+

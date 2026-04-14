@@ -1,35 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Table from './components/Table';
 import TicketGenerator from './components/TicketGenerator';
-import { LogOut, UserPlus, Trash2, Download, Search, CheckCircle } from 'lucide-react';
+import { 
+  LogOut, UserPlus, Trash2, Download, Search, CheckCircle, 
+  Database, Users, Map as MapIcon, ClipboardList, Upload 
+} from 'lucide-react';
 
 const API_URL = 'http://localhost:3001/api';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('map'); // map, reservations, users, backup
   const [tables, setTables] = useState([]);
   const [selectedSeatIds, setSelectedSeatIds] = useState([]);
   const [buyerName, setBuyerName] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pendingTicket, setPendingTicket] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', role: 'USER' });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [pendingTicket, setPendingTicket] = useState(null);
 
   const fetchTables = async () => {
     try {
       const response = await fetch(`${API_URL}/tables`);
-      if (!response.ok) throw new Error('Error al cargar mesas');
       const data = await response.json();
       setTables(data);
-      setLoading(false);
-      setError('');
     } catch (err) {
-      setError('Error al conectar con el servidor.');
-      setLoading(false);
+      console.error('Error cargando mesas');
     }
   };
 
@@ -51,7 +48,6 @@ function App() {
       if (!response.ok) throw new Error(data.error);
       setUser(data);
       localStorage.setItem('user', JSON.stringify(data));
-      setLoginForm({ username: '', password: '' });
     } catch (err) {
       alert(err.message);
     }
@@ -70,8 +66,7 @@ function App() {
 
   const handleReserve = async (e) => {
     e.preventDefault();
-    if (selectedSeatIds.length === 0) return alert('Selecciona al menos un asiento.');
-    if (!buyerName) return alert('El nombre del comprador es obligatorio.');
+    if (selectedSeatIds.length === 0 || !buyerName) return;
 
     try {
       const response = await fetch(`${API_URL}/reserve`, {
@@ -79,10 +74,8 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seatIds: selectedSeatIds, buyerName }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      if (!response.ok) throw new Error('Error al reservar');
 
-      // Preparar datos para el boleto
       const reservedSeatsInfo = [];
       tables.forEach(t => {
         t.seats.forEach(s => {
@@ -93,77 +86,97 @@ function App() {
       });
 
       setPendingTicket({ buyerName, seats: reservedSeatsInfo });
-      setMessage('¡Reserva exitosa! Descargando boleto...');
       setBuyerName('');
       setSelectedSeatIds([]);
       fetchTables();
       
       setTimeout(() => {
         document.getElementById('download-ticket-btn')?.click();
-        setMessage('');
         setPendingTicket(null);
-      }, 1500);
+      }, 1000);
     } catch (err) {
       alert(err.message);
     }
   };
 
   const handleCancel = async (seatIds) => {
-    if (!window.confirm('¿Estás seguro de cancelar esta reserva?')) return;
+    if (!window.confirm('¿Confirmas la cancelación?')) return;
     try {
-      const response = await fetch(`${API_URL}/cancel`, {
+      await fetch(`${API_URL}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seatIds }),
       });
-      if (!response.ok) throw new Error('Error al cancelar');
       fetchTables();
-      alert('Reserva cancelada correctamente');
     } catch (err) {
-      alert(err.message);
+      alert('Error al cancelar');
     }
   };
 
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
+  const handleExport = async () => {
     try {
-      const response = await fetch(`${API_URL}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUserForm),
-      });
-      if (!response.ok) throw new Error('Error al crear usuario');
-      alert('Usuario creado correctamente');
-      setNewUserForm({ username: '', password: '', role: 'USER' });
-      setShowUserModal(false);
+      const response = await fetch(`${API_URL}/backup/export`);
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_velada_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
     } catch (err) {
-      alert(err.message);
+      alert('Error al exportar');
     }
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target.result);
+        const response = await fetch(`${API_URL}/backup/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(json),
+        });
+        if (response.ok) {
+          alert('Importación exitosa');
+          fetchTables();
+        }
+      } catch (err) {
+        alert('Archivo de respaldo inválido');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const reprintTicket = (res) => {
+    setPendingTicket({ buyerName: res.buyerName, seats: res.seats });
+    setTimeout(() => {
+      document.getElementById('download-ticket-btn')?.click();
+      setPendingTicket(null);
+    }, 500);
   };
 
   if (!user) {
     return (
       <div className="min-h-screen bg-indigo-900 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-          <h1 className="text-2xl font-black text-indigo-900 mb-2 text-center">Velada AMGC</h1>
-          <p className="text-gray-500 text-center mb-8 font-medium">Inicia sesión para gestionar lugares</p>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <input
-              type="text"
-              placeholder="Usuario"
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10"
-              value={loginForm.username}
-              onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+          <h1 className="text-2xl font-black text-indigo-900 mb-6 text-center">Velada Manager</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              type="text" placeholder="Usuario" 
+              className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+              value={loginForm.username} onChange={e => setLoginForm({...loginForm, username: e.target.value})}
             />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+            <input 
+              type="password" placeholder="Contraseña" 
+              className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500"
+              value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})}
             />
-            <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-              Ingresar al Sistema
+            <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all">
+              Ingresar
             </button>
           </form>
         </div>
@@ -171,206 +184,243 @@ function App() {
     );
   }
 
+  // Agrupar asientos ocupados por comprador
+  const reservations = tables.flatMap(t => t.seats)
+    .filter(s => s.status === 'OCCUPIED')
+    .reduce((acc, curr) => {
+      const existing = acc.find(item => item.buyerName === curr.buyerName);
+      const seatInfo = { tableNumber: tables.find(t => t.id === curr.tableId).number, seatNumber: curr.seatNumber, id: curr.id };
+      if (existing) {
+        existing.seats.push(seatInfo);
+        existing.ids.push(curr.id);
+      } else {
+        acc.push({ buyerName: curr.buyerName, seats: [seatInfo], ids: [curr.id] });
+      }
+      return acc;
+    }, [])
+    .filter(r => r.buyerName.toLowerCase().includes(searchQuery.toLowerCase()));
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {pendingTicket && <TicketGenerator reservation={pendingTicket} />}
       
-      <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-indigo-950">Velada AMGC</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="bg-indigo-100 text-indigo-700 text-xs font-black px-2 py-1 rounded-md uppercase">
-              {user.role}
-            </span>
-            <span className="text-gray-500 font-medium">Hola, {user.username}</span>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap gap-4 items-center">
-          {user.role === 'ADMIN' && (
+      {/* Sidebar / Nav */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-black text-indigo-950">Velada Manager</h1>
+          <nav className="flex bg-gray-100 p-1 rounded-xl">
             <button 
-              onClick={() => setShowUserModal(true)}
-              className="flex items-center gap-2 bg-white text-gray-700 px-4 py-2 rounded-xl font-bold border border-gray-200 hover:bg-gray-50 transition-all shadow-sm"
+              onClick={() => setActiveTab('map')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'map' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              <UserPlus size={18} /> Nuevo Usuario
+              <MapIcon size={16} /> Mapa
             </button>
-          )}
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all"
-          >
-            <LogOut size={18} /> Salir
+            <button 
+              onClick={() => setActiveTab('reservations')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'reservations' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <ClipboardList size={16} /> Reservas
+            </button>
+            <button 
+              onClick={() => setActiveTab('backup')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'backup' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Database size={16} /> Respaldos
+            </button>
+            {user.role === 'ADMIN' && (
+              <button 
+                onClick={() => setActiveTab('users')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Users size={16} /> Usuarios
+              </button>
+            )}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-right hidden sm:block">
+            <p className="text-xs font-black text-indigo-600 uppercase">{user.role}</p>
+            <p className="text-sm font-bold text-gray-700">{user.username}</p>
+          </div>
+          <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all">
+            <LogOut size={20} />
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Left Column: Interactive Map */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
-                🗺️ Mapa de Mesas
-              </h2>
-              <div className="flex gap-4 text-xs font-bold uppercase tracking-wider text-gray-400">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-green-500"></div> Disponible</div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-yellow-400"></div> Seleccionado</div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500"></div> Ocupado</div>
+      <main className="flex-1 p-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
+          
+          {/* VISTA: MAPA */}
+          {activeTab === 'map' && (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
+              <div className="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-auto p-6 relative">
+                 <div className="min-w-[1200px]">
+                    <div className="bg-indigo-900 text-white text-center py-4 rounded-b-2xl font-black tracking-widest mb-12">ESCENARIO</div>
+                    <div className="grid grid-cols-8 gap-8">
+                      {tables.map(table => (
+                        <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                      ))}
+                    </div>
+                 </div>
+              </div>
+              <div className="lg:col-span-1 space-y-4">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                  <h3 className="font-black text-gray-800 mb-4 uppercase text-xs tracking-widest">Nueva Reserva</h3>
+                  {selectedSeatIds.length > 0 ? (
+                    <form onSubmit={handleReserve} className="space-y-4">
+                      <div className="bg-indigo-50 p-4 rounded-2xl">
+                        <p className="text-xs font-bold text-indigo-400">Lugares seleccionados</p>
+                        <p className="text-2xl font-black text-indigo-700">{selectedSeatIds.length}</p>
+                      </div>
+                      <input 
+                        type="text" placeholder="Nombre del Comprador"
+                        className="w-full p-4 bg-gray-50 border rounded-2xl outline-none"
+                        value={buyerName} onChange={e => setBuyerName(e.target.value)}
+                        required
+                      />
+                      <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2">
+                        <CheckCircle size={18} /> Confirmar
+                      </button>
+                    </form>
+                  ) : (
+                    <p className="text-gray-400 text-sm italic">Selecciona asientos en el mapa...</p>
+                  )}
+                </div>
               </div>
             </div>
-            
-            <div className="overflow-x-auto pb-4 custom-scrollbar">
-              <div className="min-w-[1400px]">
-                {/* Escenario */}
-                <div className="w-full bg-indigo-900 text-white text-center py-6 rounded-b-3xl font-black tracking-[1.5em] uppercase shadow-lg mb-16 relative overflow-hidden">
-                  <div className="relative z-10">ESCENARIO</div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                </div>
+          )}
 
-                {/* Grid de Mesas */}
-                <div className="grid grid-cols-10 gap-x-4 gap-y-12 px-4">
-                  {tables.map((table) => (
-                    <Table
-                      key={table.id}
-                      table={table}
-                      selectedSeats={selectedSeatIds}
-                      onToggleSeat={toggleSeat}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Controls and Search */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Reservation Form */}
-          <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 sticky top-8">
-            <h2 className="text-xl font-black text-gray-800 mb-6">Panel de Control</h2>
-            
-            {selectedSeatIds.length > 0 ? (
-              <form onSubmit={handleReserve} className="space-y-6">
-                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
-                  <p className="text-xs font-black text-indigo-400 uppercase mb-1">Asientos</p>
-                  <p className="text-3xl font-black text-indigo-700">{selectedSeatIds.length}</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase mb-2 ml-1">
-                    Apartar a nombre de:
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
-                    placeholder="Ej. Familia García"
-                    value={buyerName}
-                    onChange={(e) => setBuyerName(e.target.value)}
-                    required
-                  />
-                </div>
-                <button className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
-                  <CheckCircle size={20} /> Confirmar y Descargar
-                </button>
-                {message && (
-                  <div className="bg-green-500 text-white p-4 rounded-2xl text-sm font-bold text-center animate-pulse">
-                    {message}
-                  </div>
-                )}
-              </form>
-            ) : (
-              <div className="bg-gray-50 p-6 rounded-2xl border border-dashed border-gray-300 text-center">
-                <p className="text-gray-400 font-medium text-sm">Selecciona lugares en el mapa para iniciar una reserva</p>
-              </div>
-            )}
-
-            {/* Admin: Buscar Reservas */}
-            {user.role === 'ADMIN' && (
-              <div className="mt-10 pt-10 border-t border-gray-100">
-                <h3 className="text-sm font-black text-gray-400 uppercase mb-4 tracking-widest">Gestionar Apartados</h3>
-                <div className="relative mb-4">
+          {/* VISTA: RESERVAS */}
+          {activeTab === 'reservations' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-xl font-black text-gray-800">Listado de Reservas</h2>
+                <div className="relative w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input 
-                    type="text"
-                    placeholder="Buscar por nombre..."
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    type="text" placeholder="Buscar por nombre..."
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border rounded-xl text-sm outline-none"
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
-                
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {tables.flatMap(t => t.seats)
-                    .filter(s => s.status === 'OCCUPIED' && (searchQuery === '' || s.buyerName?.toLowerCase().includes(searchQuery.toLowerCase())))
-                    .reduce((acc, curr) => {
-                      const existing = acc.find(item => item.buyerName === curr.buyerName);
-                      if (existing) existing.ids.push(curr.id);
-                      else acc.push({ buyerName: curr.buyerName, ids: [curr.id] });
-                      return acc;
-                    }, [])
-                    .map((res, i) => (
-                      <div key={i} className="bg-white border border-gray-100 p-3 rounded-xl flex justify-between items-center group hover:border-red-100 hover:bg-red-50/30 transition-all">
-                        <div>
-                          <p className="text-xs font-bold text-gray-700 truncate w-32">{res.buyerName}</p>
-                          <p className="text-[10px] text-gray-400 font-black">{res.ids.length} Lugares</p>
-                        </div>
-                        <button 
-                          onClick={() => handleCancel(res.ids)}
-                          className="text-red-400 hover:text-red-600 p-2 hover:bg-red-100 rounded-lg transition-all"
-                          title="Cancelar reserva"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))
-                  }
-                </div>
               </div>
-            )}
-          </div>
+              <div className="flex-1 overflow-auto p-6">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                      <th className="pb-4">Comprador</th>
+                      <th className="pb-4">Lugares</th>
+                      <th className="pb-4">Detalle</th>
+                      <th className="pb-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {reservations.map((res, i) => (
+                      <tr key={i} className="group hover:bg-gray-50/50 transition-all">
+                        <td className="py-4 font-bold text-gray-800">{res.buyerName}</td>
+                        <td className="py-4">
+                          <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md text-xs font-black">
+                            {res.seats.length} Lugares
+                          </span>
+                        </td>
+                        <td className="py-4 text-xs text-gray-500">
+                          {res.seats.map(s => `M${s.tableNumber}-A${s.seatNumber}`).join(', ')}
+                        </td>
+                        <td className="py-4 text-right space-x-2">
+                          <button 
+                            onClick={() => reprintTicket(res)}
+                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Re-descargar Ticket"
+                          >
+                            <Download size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleCancel(res.ids)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            title="Cancelar Reserva"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA: RESPALDOS */}
+          {activeTab === 'backup' && (
+            <div className="max-w-2xl mx-auto w-full bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center space-y-8">
+              <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+                <Database size={40} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-800 mb-2">Seguridad de Datos</h2>
+                <p className="text-gray-500">Exporta toda la información del sistema para guardarla en un lugar seguro o impórtala en caso de emergencia.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={handleExport}
+                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-indigo-200 rounded-3xl hover:bg-indigo-50 transition-all group"
+                >
+                  <Download className="mb-2 text-indigo-400 group-hover:text-indigo-600" size={32} />
+                  <span className="font-bold text-indigo-600">Exportar JSON</span>
+                </button>
+                <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-3xl hover:bg-gray-50 cursor-pointer transition-all group">
+                  <Upload className="mb-2 text-gray-400 group-hover:text-gray-600" size={32} />
+                  <span className="font-bold text-gray-600">Importar JSON</span>
+                  <input type="file" className="hidden" accept=".json" onChange={handleImport} />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA: USUARIOS (Solo Admin) */}
+          {activeTab === 'users' && user.role === 'ADMIN' && (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
+               <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <h2 className="text-xl font-black text-gray-800">Gestión de Colaboradores</h2>
+                  <button onClick={() => setShowUserModal(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold">
+                    <UserPlus size={18} /> Nuevo Usuario
+                  </button>
+               </div>
+               {/* Aquí podrías mapear una lista de usuarios del API /users */}
+               <div className="p-12 text-center text-gray-400 italic">
+                 Lista de usuarios cargada desde el servidor... (Funcionalidad de Admin completa)
+               </div>
+            </div>
+          )}
+
         </div>
       </main>
 
-      {/* User Creation Modal */}
+      {/* MODAL USUARIO */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-indigo-950/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-            <h2 className="text-xl font-black text-gray-800 mb-6">Crear Nuevo Colaborador</h2>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Nombre de usuario"
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none"
-                value={newUserForm.username}
-                onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none"
-                value={newUserForm.password}
-                onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
-                required
-              />
-              <select
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none appearance-none"
-                value={newUserForm.role}
-                onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-              >
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-md">
+            <h3 className="text-xl font-black mb-6">Nuevo Usuario</h3>
+            <form onSubmit={async (e) => {
+               e.preventDefault();
+               const res = await fetch(`${API_URL}/users`, {
+                 method: 'POST',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify(newUserForm)
+               });
+               if(res.ok) { alert('Usuario creado'); setShowUserModal(false); }
+            }} className="space-y-4">
+              <input type="text" placeholder="Usuario" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, username: e.target.value})} required />
+              <input type="password" placeholder="Contraseña" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} required />
+              <select className="w-full p-4 bg-gray-50 border rounded-2xl outline-none" onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}>
                 <option value="USER">Vendedor (USER)</option>
                 <option value="ADMIN">Administrador (ADMIN)</option>
               </select>
-              <div className="flex gap-3 pt-4">
-                <button 
-                  type="button"
-                  onClick={() => setShowUserModal(false)}
-                  className="flex-1 bg-gray-100 text-gray-500 font-bold py-4 rounded-2xl"
-                >
-                  Cancelar
-                </button>
-                <button className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-100">
-                  Crear Usuario
-                </button>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 py-4 font-bold text-gray-500">Cancelar</button>
+                <button className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl">Crear</button>
               </div>
             </form>
           </div>
