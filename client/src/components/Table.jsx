@@ -2,7 +2,7 @@ import React from 'react';
 import Seat from './Seat';
 
 const Table = ({ table, selectedSeats, onToggleSeat }) => {
-  const radius = 45; // Aumentado de 38 a 45 para dar más espacio a los asientos
+  const radius = 38; // Reducido de 45 a 38 para acercar las sillas a la mesa
   const totalSeats = table.seats.length;
 
   return (
