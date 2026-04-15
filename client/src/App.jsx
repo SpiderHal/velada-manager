@@ -245,7 +245,7 @@ function App() {
               { id: 'map', icon: MapIcon, label: 'Mapa', roles: ['ADMIN', 'USER'] },
               { id: 'reservations', icon: ClipboardList, label: 'Reservas', roles: ['ADMIN', 'USER'] },
               { id: 'lector', icon: Scan, label: 'Lector', roles: ['ADMIN', 'LECTOR'] },
-              { id: 'backup', icon: Database, label: 'Respaldos', roles: ['ADMIN'] },
+              { id: 'backup', icon: Database, label: 'Respaldos', roles: ['ADMIN', 'USER'] },
               { id: 'users', icon: Users, label: 'Usuarios', roles: ['ADMIN'] }
             ].map(item => (
               (item.roles.includes(user.role)) && (
