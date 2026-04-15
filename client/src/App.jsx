@@ -18,7 +18,10 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingTicket, setPendingTicket] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark';
+  });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', role: 'USER' });
 
