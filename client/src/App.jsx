@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Table from './components/Table';
 import TicketGenerator from './components/TicketGenerator';
+import QRScanner from './components/QRScanner';
 import { 
   LogOut, UserPlus, Trash2, Download, Search, CheckCircle, 
-  Database, Users, Map as MapIcon, ClipboardList, Upload, Sun, Moon 
+  Database, Users, Map as MapIcon, ClipboardList, Upload, Sun, Moon, Scan 
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -231,6 +232,7 @@ function App() {
             {[
               { id: 'map', icon: MapIcon, label: 'Mapa' },
               { id: 'reservations', icon: ClipboardList, label: 'Reservas' },
+              { id: 'lector', icon: Scan, label: 'Lector' },
               { id: 'backup', icon: Database, label: 'Respaldos' },
               { id: 'users', icon: Users, label: 'Usuarios', adminOnly: true }
             ].map(item => (
@@ -359,6 +361,12 @@ function App() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'lector' && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <QRScanner apiUrl={API_URL} />
             </div>
           )}
 

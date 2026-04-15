@@ -111,6 +111,55 @@ app.post('/api/cancel', async (req, res) => {
   }
 });
 
+// Verificar QR
+app.post('/api/verify-qr', async (req, res) => {
+  const { buyer, seats } = req.body;
+  
+  if (!buyer || !seats || !Array.isArray(seats)) {
+    return res.status(400).json({ error: 'Datos de QR inválidos' });
+  }
+
+  try {
+    // Buscamos los asientos por número de mesa y asiento para mayor seguridad
+    const verificationResults = [];
+    let allValid = true;
+
+    for (const s of seats) {
+      const dbSeat = await prisma.seat.findFirst({
+        where: {
+          seatNumber: s.a,
+          table: { number: s.m }
+        },
+        include: { table: true }
+      });
+
+      if (!dbSeat || dbSeat.status !== 'OCCUPIED' || dbSeat.buyerName !== buyer) {
+        allValid = false;
+        verificationResults.push({
+          mesa: s.m,
+          asiento: s.a,
+          status: 'INVALID',
+          reason: !dbSeat ? 'No existe' : (dbSeat.status !== 'OCCUPIED' ? 'No está ocupado' : 'Comprador no coincide')
+        });
+      } else {
+        verificationResults.push({
+          mesa: s.m,
+          asiento: s.a,
+          status: 'VALID'
+        });
+      }
+    }
+
+    res.json({
+      valid: allValid,
+      buyer,
+      details: verificationResults
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- RESPALDOS (Exportar/Importar) ---
 
 // Exportar todos los datos a JSON
