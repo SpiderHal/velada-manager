@@ -248,8 +248,9 @@ function App() {
         acc.push({ buyerName: curr.buyerName, seats: [seatInfo], ids: [curr.id] });
       }
       return acc;
-    }, [])
-    .filter(r => r.buyerName.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, []);
+
+  const filteredReservations = reservations.filter(r => r.buyerName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col transition-colors duration-300">
@@ -310,6 +311,23 @@ function App() {
               </div>
               <div className="lg:col-span-1 space-y-4">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
+                  <h3 className="font-black text-gray-800 dark:text-gray-200 mb-4 uppercase text-xs tracking-widest">Resumen del Evento</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border dark:border-emerald-500/30">
+                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Reservas</p>
+                      <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">{reservations.length}</p>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border dark:border-blue-500/30">
+                      <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">Asientos</p>
+                      <p className="text-xl font-black text-blue-700 dark:text-blue-400">
+                        {tables.flatMap(t => t.seats).filter(s => s.status === 'OCCUPIED').length}
+                        <span className="text-[10px] text-blue-400 font-bold ml-1">/ 400</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
                   <h3 className="font-black text-gray-800 dark:text-gray-200 mb-4 uppercase text-xs tracking-widest">Nueva Reserva</h3>
                   {selectedSeatIds.length > 0 ? (
                     <form onSubmit={handleReserve} className="space-y-4">
@@ -352,6 +370,7 @@ function App() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                      <th className="pb-4">#</th>
                       <th className="pb-4">Comprador</th>
                       <th className="pb-4">Lugares</th>
                       <th className="pb-4">Detalle</th>
@@ -359,8 +378,9 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-                    {reservations.map((res, i) => (
+                    {filteredReservations.map((res, i) => (
                       <tr key={i} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-all">
+                        <td className="py-4 text-xs font-black text-gray-400 dark:text-gray-500">{i + 1}</td>
                         <td className="py-4 font-bold text-gray-800 dark:text-gray-200">{res.buyerName}</td>
                         <td className="py-4">
                           <span className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-2 py-1 rounded-md text-xs font-black">
