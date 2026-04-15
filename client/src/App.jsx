@@ -3,7 +3,7 @@ import Table from './components/Table';
 import TicketGenerator from './components/TicketGenerator';
 import QRScanner from './components/QRScanner';
 import { 
-  LogOut, UserPlus, Trash2, Download, Search, CheckCircle, 
+  LogOut, UserPlus, Trash2, Edit2, Download, Search, CheckCircle, 
   Database, Users, Map as MapIcon, ClipboardList, Upload, Sun, Moon, Scan 
 } from 'lucide-react';
 
@@ -27,6 +27,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingTicket, setPendingTicket] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme === 'dark';
@@ -429,7 +430,7 @@ function App() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden">
                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                   <h2 className="text-xl font-black text-gray-800 dark:text-white">Gestión de Colaboradores</h2>
-                  <button onClick={() => setShowUserModal(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">
+                  <button onClick={() => { setEditingUser(null); setNewUserForm({ username: '', password: '', role: 'USER' }); setShowUserModal(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">
                     <UserPlus size={18} /> Nuevo Usuario
                   </button>
                </div>
@@ -452,6 +453,16 @@ function App() {
                            </span>
                          </td>
                          <td className="py-4 text-right">
+                           <button 
+                             onClick={() => {
+                               setEditingUser(u);
+                               setNewUserForm({ username: u.username, role: u.role, password: '' });
+                               setShowUserModal(true);
+                             }}
+                             className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all mr-2"
+                           >
+                             <Edit2 size={18} />
+                           </button>
                            {u.username !== user.username && (
                              <button 
                                onClick={async () => {
@@ -480,25 +491,55 @@ function App() {
       {showUserModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-md border border-transparent dark:border-slate-800">
-            <h3 className="text-xl font-black mb-6 dark:text-white">Nuevo Usuario</h3>
+            <h3 className="text-xl font-black mb-6 dark:text-white">{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
             <form onSubmit={async (e) => {
                e.preventDefault();
-               const res = await fetch(`${API_URL}/users`, {
-                 method: 'POST',
+               const url = editingUser ? `${API_URL}/users/${editingUser.id}` : `${API_URL}/users`;
+               const method = editingUser ? 'PUT' : 'POST';
+               const res = await fetch(url, {
+                 method,
                  headers: {'Content-Type': 'application/json'},
                  body: JSON.stringify(newUserForm)
                });
-               if(res.ok) { alert('Usuario creado'); setShowUserModal(false); }
+               if(res.ok) { 
+                 alert(editingUser ? 'Usuario actualizado' : 'Usuario creado'); 
+                 setShowUserModal(false); 
+                 setEditingUser(null);
+                 fetchUsers();
+               }
             }} className="space-y-4">
-              <input type="text" placeholder="Usuario" className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, username: e.target.value})} required />
-              <input type="password" placeholder="Contraseña" className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} required />
-              <select className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}>
+              <input 
+                type="text" 
+                placeholder="Usuario" 
+                className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" 
+                value={newUserForm.username}
+                onChange={e => setNewUserForm({...newUserForm, username: e.target.value})} 
+                required 
+              />
+              {!editingUser && (
+                <input 
+                  type="password" 
+                  placeholder="Contraseña" 
+                  className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" 
+                  value={newUserForm.password}
+                  onChange={e => setNewUserForm({...newUserForm, password: e.target.value})} 
+                  required 
+                />
+              )}
+              <select 
+                className="w-full p-4 bg-gray-50 dark:bg-slate-800 border dark:border-slate-700 rounded-2xl outline-none dark:text-white" 
+                value={newUserForm.role}
+                onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}
+              >
                 <option value="USER">Vendedor (USER)</option>
                 <option value="ADMIN">Administrador (ADMIN)</option>
+                <option value="LECTOR">Lector de Acceso (LECTOR)</option>
               </select>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 py-4 font-bold text-gray-500 dark:text-gray-400">Cancelar</button>
-                <button className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl">Crear</button>
+                <button type="button" onClick={() => { setShowUserModal(false); setEditingUser(null); }} className="flex-1 py-4 font-bold text-gray-500 dark:text-gray-400">Cancelar</button>
+                <button className="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl">
+                  {editingUser ? 'Guardar' : 'Crear'}
+                </button>
               </div>
             </form>
           </div>

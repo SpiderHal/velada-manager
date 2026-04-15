@@ -63,6 +63,21 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// Actualizar Usuario
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { username, role } = req.body;
+  try {
+    const user = await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { username, role }
+    });
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(400).json({ error: 'Error al actualizar usuario' });
+  }
+});
+
 // Obtener todas las mesas y asientos
 app.get('/api/tables', async (req, res) => {
   try {
