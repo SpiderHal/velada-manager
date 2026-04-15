@@ -6,7 +6,7 @@ import {
   Database, Users, Map as MapIcon, ClipboardList, Upload, Sun, Moon 
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 function App() {
   const [user, setUser] = useState(null);
