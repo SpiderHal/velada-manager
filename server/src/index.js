@@ -52,6 +52,17 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
+// Eliminar Usuario
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.user.delete({ where: { id: parseInt(id) } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
 // Obtener todas las mesas y asientos
 app.get('/api/tables', async (req, res) => {
   try {

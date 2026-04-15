@@ -33,6 +33,17 @@ function App() {
   });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', role: 'USER' });
+  const [usersList, setUsersList] = useState([]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/users`);
+      const data = await response.json();
+      setUsersList(data);
+    } catch (err) {
+      console.error('Error cargando usuarios');
+    }
+  };
 
   const fetchTables = async () => {
     try {
@@ -49,6 +60,12 @@ function App() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'users' && user?.role === 'ADMIN') {
+      fetchUsers();
+    }
+  }, [activeTab, user]);
 
   useEffect(() => {
     if (darkMode) {
@@ -409,15 +426,50 @@ function App() {
           )}
 
           {activeTab === 'users' && user.role === 'ADMIN' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden">
                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                   <h2 className="text-xl font-black text-gray-800 dark:text-white">Gestión de Colaboradores</h2>
                   <button onClick={() => setShowUserModal(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">
                     <UserPlus size={18} /> Nuevo Usuario
                   </button>
                </div>
-               <div className="p-12 text-center text-gray-400 dark:text-gray-500 italic">
-                 Panel de administración de usuarios activo.
+               <div className="flex-1 overflow-auto p-6">
+                 <table className="w-full text-left">
+                   <thead>
+                     <tr className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b border-gray-100 dark:border-slate-800">
+                       <th className="pb-4">Usuario</th>
+                       <th className="pb-4">Rol</th>
+                       <th className="pb-4 text-right">Acciones</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                     {usersList.map((u, i) => (
+                       <tr key={i} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-all">
+                         <td className="py-4 font-bold text-gray-800 dark:text-gray-200">{u.username}</td>
+                         <td className="py-4">
+                           <span className={`px-2 py-1 rounded-md text-xs font-black ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300' : (u.role === 'LECTOR' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300')}`}>
+                             {u.role}
+                           </span>
+                         </td>
+                         <td className="py-4 text-right">
+                           {u.username !== user.username && (
+                             <button 
+                               onClick={async () => {
+                                 if(window.confirm(`¿Eliminar al usuario ${u.username}?`)) {
+                                   await fetch(`${API_URL}/users/${u.id}`, { method: 'DELETE' });
+                                   fetchUsers();
+                                 }
+                               }}
+                               className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                             >
+                               <Trash2 size={18} />
+                             </button>
+                           )}
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
                </div>
             </div>
           )}
