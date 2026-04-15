@@ -12,6 +12,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('map'); 
+  
+  // Ajustar pestaña activa al cambiar de usuario o cargar
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'LECTOR') setActiveTab('lector');
+      else setActiveTab('map');
+    }
+  }, [user]);
+
   const [tables, setTables] = useState([]);
   const [selectedSeatIds, setSelectedSeatIds] = useState([]);
   const [buyerName, setBuyerName] = useState('');
@@ -233,13 +242,13 @@ function App() {
           <h1 className="text-2xl font-black text-indigo-950 dark:text-white">Velada Manager</h1>
           <nav className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
             {[
-              { id: 'map', icon: MapIcon, label: 'Mapa' },
-              { id: 'reservations', icon: ClipboardList, label: 'Reservas' },
-              { id: 'lector', icon: Scan, label: 'Lector' },
-              { id: 'backup', icon: Database, label: 'Respaldos' },
-              { id: 'users', icon: Users, label: 'Usuarios', adminOnly: true }
+              { id: 'map', icon: MapIcon, label: 'Mapa', roles: ['ADMIN', 'USER'] },
+              { id: 'reservations', icon: ClipboardList, label: 'Reservas', roles: ['ADMIN', 'USER'] },
+              { id: 'lector', icon: Scan, label: 'Lector', roles: ['ADMIN', 'LECTOR'] },
+              { id: 'backup', icon: Database, label: 'Respaldos', roles: ['ADMIN'] },
+              { id: 'users', icon: Users, label: 'Usuarios', roles: ['ADMIN'] }
             ].map(item => (
-              (!item.adminOnly || user.role === 'ADMIN') && (
+              (item.roles.includes(user.role)) && (
                 <button 
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
