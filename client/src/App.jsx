@@ -321,7 +321,7 @@ function App() {
                          {/* LADO IZQUIERDO: 3 COLUMNAS - DISEÑO ESCALERA */}
                          <div className="flex gap-16 flex-shrink-0">
                            {/* Columna 1 (Exterior) - 4 mesas - MÁS ABAJO */}
-                           <div className="flex flex-col gap-28 pt-80">
+                           <div className="flex flex-col gap-24 pt-80">
                              {tables.filter(t => t.number >= 1 && t.number <= 4).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -329,7 +329,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 2 (Media) - 5 mesas - MEDIO */}
-                           <div className="flex flex-col gap-20 pt-40">
+                           <div className="flex flex-col gap-24 pt-40">
                              {tables.filter(t => t.number >= 5 && t.number <= 9).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -337,7 +337,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 3 (Interior) - 6 mesas - ARRIBA */}
-                           <div className="flex flex-col gap-8 pt-0">
+                           <div className="flex flex-col gap-24 pt-0">
                              {tables.filter(t => t.number >= 10 && t.number <= 15).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -370,7 +370,7 @@ function App() {
                          {/* LADO DERECHO: 3 COLUMNAS - DISEÑO ESCALERA (SIMÉTRICO) */}
                          <div className="flex gap-16 flex-shrink-0">
                            {/* Columna 4 (Interior) - 6 mesas - ARRIBA */}
-                           <div className="flex flex-col gap-8 pt-0">
+                           <div className="flex flex-col gap-24 pt-0">
                              {tables.filter(t => t.number >= 16 && t.number <= 21).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -378,7 +378,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 5 (Media) - 5 mesas - MEDIO */}
-                           <div className="flex flex-col gap-20 pt-40">
+                           <div className="flex flex-col gap-24 pt-40">
                              {tables.filter(t => t.number >= 22 && t.number <= 26).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -386,7 +386,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 6 (Exterior) - 4 mesas - MÁS ABAJO */}
-                           <div className="flex flex-col gap-28 pt-80">
+                           <div className="flex flex-col gap-24 pt-80">
                              {tables.filter(t => t.number >= 27 && t.number <= 30).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
