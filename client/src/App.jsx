@@ -35,7 +35,7 @@ function App() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [newUserForm, setNewUserForm] = useState({ username: '', password: '', role: 'USER' });
   const [usersList, setUsersList] = useState([]);
-  const [zoom, setZoom] = useState(0.5);
+  const [zoom, setZoom] = useState(0.25);
 
   const fetchUsers = async () => {
     try {
@@ -313,15 +313,15 @@ function App() {
                     <span className="text-sm font-black text-indigo-600 min-w-[50px]">{Math.round(zoom * 100)}%</span>
                  </div>
 
-                 <div style={{ width: `${2200 * zoom}px`, height: `${1600 * zoom}px`, transition: 'all 0.2s ease-out' }}>
+                 <div style={{ width: `${3000 * zoom}px`, height: `${2000 * zoom}px`, transition: 'all 0.2s ease-out' }}>
                     <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }} className="flex flex-col gap-16">
                        {/* PARTE SUPERIOR: COLUMNAS LATERALES Y CENTRO */}
-                       <div className="flex gap-20 justify-start items-start">
-                         
+                       <div className="flex gap-24 justify-start items-start">
+
                          {/* LADO IZQUIERDO: 3 COLUMNAS */}
-                         <div className="flex gap-12 flex-shrink-0">
+                         <div className="flex gap-16 flex-shrink-0">
                            {/* Columna 1 (Exterior) - 4 mesas */}
-                           <div className="flex flex-col gap-28 pt-10">
+                           <div className="flex flex-col gap-32 pt-48">
                              {tables.filter(t => t.number >= 1 && t.number <= 4).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -329,7 +329,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 2 - 5 mesas */}
-                           <div className="flex flex-col gap-16">
+                           <div className="flex flex-col gap-20 pt-24">
                              {tables.filter(t => t.number >= 5 && t.number <= 9).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -337,45 +337,46 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 3 (Interior) - 7 mesas */}
-                           <div className="flex flex-col gap-6 pt-4">
+                           <div className="flex flex-col gap-8 pt-0">
                              {tables.filter(t => t.number >= 10 && t.number <= 16).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
                                </div>
                              ))}
                            </div>
-                           </div>
+                         </div>
 
-                           {/* CENTRO: ESCENARIO Y PISTA DE BAILE */}
-                           <div className="flex flex-col items-center gap-0 w-[900px] flex-shrink-0">
-                           <div className="w-full bg-red-600 dark:bg-red-700 text-white text-center py-24 rounded-t-3xl font-black tracking-widest shadow-2xl border-b-4 border-red-800">
-                             <span className="text-5xl">ESCENARIO</span>
+                         {/* CENTRO: ESCENARIO Y PISTA DE BAILE */}
+                         <div className="flex flex-col items-center gap-0 w-[1350px] flex-shrink-0">
+                           <div className="w-full bg-red-600 dark:bg-red-700 text-white text-center py-36 rounded-t-3xl font-black tracking-widest shadow-2xl border-b-4 border-red-800">
+                             <span className="text-6xl">ESCENARIO</span>
                            </div>
-                           <div className="w-full bg-indigo-950 dark:bg-indigo-900 text-white text-center py-40 rounded-b-3xl font-black tracking-widest shadow-2xl border-t-4 border-indigo-800 flex items-center justify-center">
-                             <span className="text-4xl opacity-50">PISTA DE BAILE</span>
+                           <div className="w-full bg-indigo-950 dark:bg-indigo-900 text-white text-center py-60 rounded-b-3xl font-black tracking-widest shadow-2xl border-t-4 border-indigo-800 flex items-center justify-center">
+                             <span className="text-5xl opacity-50">PISTA DE BAILE</span>
                            </div>
 
                            {/* Mesas inferiores centrales (4 pares = 8 mesas) */}
-                           <div className="mt-32 grid grid-cols-4 gap-x-12 gap-y-16">
+                           <div className="mt-48 grid grid-cols-4 gap-x-20 gap-y-24">
                               {tables.filter(t => t.number >= 33 && t.number <= 40).map(table => (
                                  <div key={table.id} className="flex-shrink-0">
                                    <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
                                  </div>
                               ))}
                            </div>
-                           </div>
+                         </div>
 
-                           {/* LADO DERECHO: 3 COLUMNAS */}
-                           <div className="flex gap-12 flex-shrink-0">
+                         {/* LADO DERECHO: 3 COLUMNAS */}
+                         <div className="flex gap-16 flex-shrink-0">
                            {/* Columna 4 (Interior) - 7 mesas */}
-                           <div className="flex flex-col gap-6 pt-4">
+                           <div className="flex flex-col gap-8 pt-0">
                              {tables.filter(t => t.number >= 17 && t.number <= 23).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
                                </div>
                              ))}
-                           </div>                           {/* Columna 5 - 5 mesas */}
-                           <div className="flex flex-col gap-16">
+                           </div>
+                           {/* Columna 5 - 5 mesas */}
+                           <div className="flex flex-col gap-20 pt-24">
                              {tables.filter(t => t.number >= 24 && t.number <= 28).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
@@ -383,7 +384,7 @@ function App() {
                              ))}
                            </div>
                            {/* Columna 6 (Exterior) - 4 mesas */}
-                           <div className="flex flex-col gap-28 pt-10">
+                           <div className="flex flex-col gap-32 pt-48">
                              {tables.filter(t => t.number >= 29 && t.number <= 32).map(table => (
                                <div key={table.id} className="flex-shrink-0">
                                  <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
