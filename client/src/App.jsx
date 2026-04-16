@@ -299,68 +299,82 @@ function App() {
           
           {activeTab === 'map' && (
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
-              <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-auto p-12 relative flex justify-center">
-                 <div className="min-w-[1600px] flex flex-col gap-12">
+              <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-auto p-12 relative">
+                 <div className="min-w-[1800px] flex flex-col gap-16">
                     {/* PARTE SUPERIOR: COLUMNAS LATERALES Y CENTRO */}
-                    <div className="flex gap-16 justify-center items-start">
+                    <div className="flex gap-20 justify-start items-start">
                       
                       {/* LADO IZQUIERDO: 3 COLUMNAS */}
-                      <div className="flex gap-8">
+                      <div className="flex gap-12 flex-shrink-0">
                         {/* Columna 1 (Exterior) - 4 mesas */}
-                        <div className="flex flex-col gap-24 pt-10">
+                        <div className="flex flex-col gap-28 pt-10">
                           {tables.filter(t => t.number >= 1 && t.number <= 4).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                         {/* Columna 2 - 5 mesas */}
-                        <div className="flex flex-col gap-12">
+                        <div className="flex flex-col gap-16">
                           {tables.filter(t => t.number >= 5 && t.number <= 9).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                         {/* Columna 3 (Interior) - 7 mesas */}
-                        <div className="flex flex-col gap-4 pt-16">
+                        <div className="flex flex-col gap-6 pt-20">
                           {tables.filter(t => t.number >= 10 && t.number <= 16).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                       </div>
 
                       {/* CENTRO: ESCENARIO Y PISTA DE BAILE */}
-                      <div className="flex flex-col items-center gap-0 w-[450px]">
-                        <div className="w-full bg-red-600 dark:bg-red-700 text-white text-center py-10 rounded-t-3xl font-black tracking-widest shadow-xl border-b-4 border-red-800">
-                          <span className="text-3xl">ESCENARIO</span>
+                      <div className="flex flex-col items-center gap-0 w-[800px] flex-shrink-0">
+                        <div className="w-full bg-red-600 dark:bg-red-700 text-white text-center py-16 rounded-t-3xl font-black tracking-widest shadow-2xl border-b-4 border-red-800">
+                          <span className="text-4xl">ESCENARIO</span>
                         </div>
-                        <div className="w-full bg-indigo-950 dark:bg-indigo-900 text-white text-center py-20 rounded-b-3xl font-black tracking-widest shadow-xl border-t-4 border-indigo-800 flex items-center justify-center">
-                          <span className="text-2xl opacity-50">PISTA DE BAILE</span>
+                        <div className="w-full bg-indigo-950 dark:bg-indigo-900 text-white text-center py-32 rounded-b-3xl font-black tracking-widest shadow-2xl border-t-4 border-indigo-800 flex items-center justify-center">
+                          <span className="text-3xl opacity-50">PISTA DE BAILE</span>
                         </div>
                         
                         {/* Mesas inferiores centrales (4 pares = 8 mesas) */}
-                        <div className="mt-12 grid grid-cols-4 gap-x-8 gap-y-12">
+                        <div className="mt-16 grid grid-cols-4 gap-x-12 gap-y-16">
                            {tables.filter(t => t.number >= 33 && t.number <= 40).map(table => (
-                              <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                              <div key={table.id} className="flex-shrink-0">
+                                <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                              </div>
                            ))}
                         </div>
                       </div>
 
                       {/* LADO DERECHO: 3 COLUMNAS */}
-                      <div className="flex gap-8">
+                      <div className="flex gap-12 flex-shrink-0">
                         {/* Columna 4 (Interior) - 7 mesas */}
-                        <div className="flex flex-col gap-4 pt-16">
+                        <div className="flex flex-col gap-6 pt-20">
                           {tables.filter(t => t.number >= 17 && t.number <= 23).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                         {/* Columna 5 - 5 mesas */}
-                        <div className="flex flex-col gap-12">
+                        <div className="flex flex-col gap-16">
                           {tables.filter(t => t.number >= 24 && t.number <= 28).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                         {/* Columna 6 (Exterior) - 4 mesas */}
-                        <div className="flex flex-col gap-24 pt-10">
+                        <div className="flex flex-col gap-28 pt-10">
                           {tables.filter(t => t.number >= 29 && t.number <= 32).map(table => (
-                            <Table key={table.id} table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            <div key={table.id} className="flex-shrink-0">
+                              <Table table={table} selectedSeats={selectedSeatIds} onToggleSeat={toggleSeat} />
+                            </div>
                           ))}
                         </div>
                       </div>
